@@ -1,0 +1,53 @@
+# =======================
+# Python / Backend
+# =======================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# Ambientes virtuais
+.venv/
+venv/
+env/
+.env
+
+# Variáveis de ambiente
+*.env
+.env.*
+
+# Dependências instaladas
+*.egg-info/
+dist/
+build/
+
+# =======================
+# Sistema Operacional
+# =======================
+
+# Windows
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# =======================
+# Editores / IDEs
+# =======================
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# =======================
+# Logs e temporários
+# =======================
+*.log
+*.tmp
+*.bak
+*.swp
