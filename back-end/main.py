@@ -1,8 +1,17 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 import os
 
 app = FastAPI()
+
+# Permite que o frontend (localhost:3000) acesse a API (localhost:8000)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_methods=["GET"],
+    allow_headers=["*"],
+)
 
 # Caminhos absolutos para localizar a pasta de imagens
 # independente de onde o servidor for executado
