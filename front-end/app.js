@@ -1,43 +1,33 @@
 // ===================================================
 // CONFIGURAÇÃO DA API
-// Quando o frontend for servido pelo FastAPI (Dia 3), a API está
-// no mesmo servidor — usamos uma URL relativa ou o endereço completo.
 // ===================================================
 const API_BASE_URL = "http://localhost:8000";
 
+// IDs dos special-slots que recebem o efeito raro quando preenchidos
+const IDS_RAROS = new Set([3, 8, 13, 18, 23, 28]);
+
 // ===================================================
 // FUNÇÃO: Preenche os slots do álbum com imagens da API
-// Esta função é chamada após o álbum ser inicializado.
 // ===================================================
 async function preencherFigurinhas() {
     try {
-        // 1. Busca as figurinhas disponíveis na API
         const response = await fetch(`${API_BASE_URL}/figurinhas`);
 
         if (!response.ok) {
             throw new Error(`Erro na API: ${response.status} ${response.statusText}`);
         }
 
-        // 2. Converte o JSON em array JavaScript
         const figurinhas = await response.json();
-
-        // 3. Cria um Map de id → figurinha para lookup rápido
-        //    Ex: 1 → { id: 1, nome: "Alan Turing", imagem_url: "/imgs/01-alan-turing.jpg" }
         const porId = new Map(figurinhas.map(f => [f.id, f]));
-
-        // 4. Percorre todos os slots do HTML
         const slots = document.querySelectorAll(".sticker-slot");
 
         for (const slot of slots) {
             const slotNumeroEl = slot.querySelector(".slot-number");
             if (!slotNumeroEl) continue;
 
-            // Extrai o número do slot: "#01" → 1
             const id = parseInt(slotNumeroEl.textContent.replace("#", ""), 10);
-
             if (!porId.has(id)) continue;
 
-            // A figurinha existe: insere a imagem
             const figurinha = porId.get(id);
 
             const img = document.createElement("img");
@@ -45,7 +35,64 @@ async function preencherFigurinhas() {
             img.alt = figurinha.nome;
             img.className = "sticker-img";
 
-            img.onload = () => slot.classList.add("slot-preenchido");
+            img.onload = () => {
+                slot.classList.add("slot-preenchido");
+
+                // Aplica efeito raro nos special-slots preenchidos
+                if (IDS_RAROS.has(id)) {
+                    slot.classList.add("rara");
+
+                    // Overlay holográfico
+                    const holoOverlay = document.createElement("div");
+                    holoOverlay.className = "holo-overlay";
+                    slot.appendChild(holoOverlay);
+
+                    // Camada de partículas/glitter
+                    const holoGlitter = document.createElement("div");
+                    holoGlitter.className = "holo-glitter";
+                    slot.appendChild(holoGlitter);
+
+                    // Badge RARO
+                    const badge = document.createElement("span");
+                    badge.className = "badge-raro";
+                    badge.textContent = "✦ RARO";
+                    slot.appendChild(badge);
+
+                    // Tilt 3D + reflexo seguindo o mouse
+                    slot.addEventListener("mousemove", (e) => {
+                        const rect = slot.getBoundingClientRect();
+                        const x = e.clientX - rect.left;   // px dentro do slot
+                        const y = e.clientY - rect.top;
+
+                        const cx = rect.width / 2;
+                        const cy = rect.height / 2;
+
+                        // Inclinação máxima de 15 graus
+                        const rotateY =  ((x - cx) / cx) * 15;
+                        const rotateX = -((y - cy) / cy) * 15;
+
+                        // Posição em % para o overlay
+                        const mx = (x / rect.width)  * 100;
+                        const my = (y / rect.height) * 100;
+
+                        // Ângulo do gradiente de listras arco-íris
+                        const angle = Math.atan2(y - cy, x - cx) * (180 / Math.PI);
+
+                        slot.style.transform = `perspective(600px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.04)`;
+                        holoOverlay.style.setProperty("--mx", `${mx}%`);
+                        holoOverlay.style.setProperty("--my", `${my}%`);
+                        holoOverlay.style.setProperty("--angle", angle);
+                        holoGlitter.style.setProperty("--mx", `${mx}%`);
+                        holoGlitter.style.setProperty("--my", `${my}%`);
+                    });
+
+                    // Reseta ao sair
+                    slot.addEventListener("mouseleave", () => {
+                        slot.style.transform = "perspective(600px) rotateX(0deg) rotateY(0deg) scale(1)";
+                    });
+                }
+            };
+
             img.onerror = () => console.warn(`Imagem não encontrada: ${figurinha.nome}`);
 
             slot.insertBefore(img, slot.firstChild);
@@ -55,7 +102,44 @@ async function preencherFigurinhas() {
 
     } catch (erro) {
         console.warn("⚠️  Não foi possível conectar à API do backend:", erro.message);
-        console.info("ℹ️  Inicie o servidor: cd backend/dia-3 && uvicorn main:app --reload");
+        console.info("ℹ️  Inicie o servidor: cd back-end && uvicorn main:app --reload");
+    }
+}
+
+// ===================================================
+// FUNÇÃO: Compartilhar — captura a página atual como PNG
+// ===================================================
+async function compartilharAlbum() {
+    const toast = document.getElementById("share-toast");
+
+    try {
+        const bookEl = document.getElementById("book");
+
+        // html2canvas captura o elemento como imagem
+        const canvas = await html2canvas(bookEl, {
+            backgroundColor: null,
+            scale: 2,           // dobra a resolução para qualidade maior
+            useCORS: true,      // necessário para carregar imagens de outra origem (localhost:8000)
+            allowTaint: false,
+            logging: false,
+        });
+
+        // Cria link de download e dispara o clique programaticamente
+        const link = document.createElement("a");
+        link.download = `alura-album-${Date.now()}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+
+        // Exibe toast de confirmação
+        toast.textContent = "📥 Imagem salva!";
+        toast.classList.add("visible");
+        setTimeout(() => toast.classList.remove("visible"), 2500);
+
+    } catch (err) {
+        console.error("Erro ao capturar o álbum:", err);
+        toast.textContent = "❌ Erro ao salvar imagem";
+        toast.classList.add("visible");
+        setTimeout(() => toast.classList.remove("visible"), 2500);
     }
 }
 
@@ -64,6 +148,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnPrev = document.getElementById("btn-prev");
     const btnNext = document.getElementById("btn-next");
     const soundToggle = document.getElementById("sound-toggle");
+    const btnShare = document.getElementById("btn-share");
     const iconOn = soundToggle.querySelector(".sound-icon-on");
     const iconOff = soundToggle.querySelector(".sound-icon-off");
 
@@ -337,4 +422,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Hide left button initially since start page is 0
         btnPrev.classList.add("hidden");
     }
+
+    // 5. Botão de compartilhar
+    btnShare.addEventListener("click", compartilharAlbum);
 });
