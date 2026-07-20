@@ -156,7 +156,7 @@ public class Troca {
     private Long paraUsuario;
     private Integer figurinhaOferecida;
     private Integer figurinhaDesejada;
-    private StatusTroca status; // PENDENTE, ACEITA, RECUSADA
+    private StatusTroca status;
 }
 
 @RestController
