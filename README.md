@@ -141,8 +141,6 @@ def propor_troca(troca: Troca, db: Session = Depends(get_db)):
 @app.patch("/trocas/{id}/aceitar")
 def aceitar_troca(id: int, db: Session = Depends(get_db)):
     troca = db.query(TrocaDB).filter(TrocaDB.id == id).first()
-    # Transfere as figurinhas entre os usuários
-    # Atualiza status para "aceita"
     ...
 ```
 
@@ -173,8 +171,6 @@ public class TrocaController {
     @Transactional
     public Troca aceitar(@PathVariable Long id) {
         Troca troca = trocaRepository.findById(id).orElseThrow();
-        // Transfere figurinhas entre coleções
-        // Atualiza status
         troca.setStatus(StatusTroca.ACEITA);
         return trocaRepository.save(troca);
     }
